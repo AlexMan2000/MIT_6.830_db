@@ -3,6 +3,8 @@ package simpledb.storage;
 import simpledb.common.Catalog;
 import simpledb.common.Database;
 
+import java.util.NoSuchElementException;
+
 public class LRUCache extends RUCache{
 
     public LRUCache(int numpages) {
@@ -24,11 +26,12 @@ public class LRUCache extends RUCache{
 
 
     /**
-     * Allocate a page into the buffer
+     * Load a page from the disk for client use
      * @param pid
+     * @throws if the page doesn't exist on the file associated with pid.getTableId
      */
     @Override
-    public synchronized Page loadPage(PageId pid) {
+    public synchronized Page loadPage(PageId pid) throws IllegalArgumentException {
         if (isFull()) {
             // If cache is full, evict first
             evictPage();
@@ -40,9 +43,10 @@ public class LRUCache extends RUCache{
         Catalog catalog = Database.getCatalog();
         Table table = catalog.getTableById(tableId);
         DbFile dbFile = table.getTableContent();
+        Page page;
 
-
-        Page page = dbFile.readPage(pid); // Read the byte content from the disk
+        // May throw IllegalArgumentException
+        page = dbFile.readPage(pid); // Read the byte content from the disk
 
         // Insert at the front, representing more recent load.
         Node newNode = new Node(this.front, this.front.next, page.getId(), page);
@@ -75,6 +79,22 @@ public class LRUCache extends RUCache{
         return null;
     }
 
+    @Override
+    public synchronized void updatePage(PageId pid, Page page) throws NoSuchElementException{
+        Node curr = this.front.next;
+        while (curr != this.end) {
+            PageId pageId = curr.page.getId();
+            if (pageId.equals(pid)) {
+                // Cache hit, move this node to the front
+                moveNodeToFront(curr);
+                curr.page = page;
+                return;
+            }
+            curr = curr.next;
+        }
+        throw new NoSuchElementException("Page Id doesn't exist in bufferpool");
+    }
+
 
     public void moveNodeToFront(Node node) {
         node.prev.next = node.next;
@@ -84,5 +104,14 @@ public class LRUCache extends RUCache{
         node.next = this.front.next;
         this.front.next.prev = node;
         this.front.next = node;
+    }
+
+
+    public void printAllPages() {
+        Node curr = this.front.next;
+        while (curr != this.end) {
+            PageId pageId = curr.page.getId();
+            curr = curr.next;
+        }
     }
 }

@@ -17,6 +17,16 @@ public class ClockCache implements Cache{
     }
 
     @Override
+    public void printAllPages() {
+
+    }
+
+    @Override
+    public void updatePage(PageId pid, Page page) {
+
+    }
+
+    @Override
     public boolean isFull() {
         return false;
     }

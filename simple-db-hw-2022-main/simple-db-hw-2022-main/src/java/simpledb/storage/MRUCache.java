@@ -19,4 +19,16 @@ public class MRUCache extends RUCache{
     public Page getPage(PageId pid) {
         return null;
     }
+
+    @Override
+    public void printAllPages() {
+
+    }
+
+    @Override
+    public void updatePage(PageId pid, Page page) {
+
+    }
+
+
 }

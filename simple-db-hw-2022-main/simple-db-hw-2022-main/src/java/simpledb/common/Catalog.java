@@ -105,6 +105,16 @@ public class Catalog {
         throw new NoSuchElementException(String.format("No such table named: %s", name));
     }
 
+
+    public DbFile getTableFile(int tableid) {
+        try {
+            Table tableById = getTableById(tableid);
+            return tableById.getTableContent();
+        } catch (NoSuchElementException e) {
+            return null;
+        }
+    }
+
     /**
      * Returns the tuple descriptor (schema) of the specified table
      *

@@ -70,6 +70,7 @@ public class OrderBy extends Operator {
     }
 
     public void rewind() {
+        // 直接调用child.rewind()肯定不行，因为我们要保证上游数据的大小顺序
         it = childTups.iterator();
     }
 

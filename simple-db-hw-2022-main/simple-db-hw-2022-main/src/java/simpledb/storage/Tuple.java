@@ -22,7 +22,7 @@ public class Tuple implements Serializable {
      */
     private Field[] fields;
     private TupleDesc td; // One td object per class
-    private RecordId rid;
+    private RecordId rid; // (page_id, slot_id)
 
     /**
      * Create a new tuple with the specified schema (type).
@@ -127,5 +127,31 @@ public class Tuple implements Serializable {
     public void resetTupleDesc(TupleDesc td) {
         // TODO: some code goes here
         this.td = td;
+    }
+
+
+    @Override
+    public int hashCode() {
+        int res = 0;
+        for (Field field: fields) {
+            res = res * 31 + field.hashCode();
+        }
+        res = res * 31 + td.hashCode();
+        res = res * 31 + rid.hashCode();
+        return res;
+    }
+
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+
+        if (! (o instanceof Tuple)) {
+            return false;
+        }
+
+        return o.hashCode() == this.hashCode();
     }
 }

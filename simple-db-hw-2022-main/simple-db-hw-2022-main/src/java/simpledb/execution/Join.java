@@ -1,10 +1,12 @@
 package simpledb.execution;
 
 import simpledb.common.DbException;
+import simpledb.storage.Field;
 import simpledb.storage.Tuple;
 import simpledb.storage.TupleDesc;
 import simpledb.transaction.TransactionAbortedException;
 
+import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 /**
@@ -13,6 +15,14 @@ import java.util.NoSuchElementException;
 public class Join extends Operator {
 
     private static final long serialVersionUID = 1L;
+
+    private JoinPredicate p;
+    OpIterator child1;
+
+    Tuple nextChild1;
+
+    OpIterator child2;
+
 
     /**
      * Constructor. Accepts two children to join and the predicate to join them
@@ -24,11 +34,15 @@ public class Join extends Operator {
      */
     public Join(JoinPredicate p, OpIterator child1, OpIterator child2) {
         // TODO: some code goes here
+        this.p = p;
+        this.child1 = child1;
+        this.child2 = child2;
+        this.nextChild1 = null;
     }
 
     public JoinPredicate getJoinPredicate() {
         // TODO: some code goes here
-        return null;
+        return this.p;
     }
 
     /**
@@ -37,7 +51,8 @@ public class Join extends Operator {
      */
     public String getJoinField1Name() {
         // TODO: some code goes here
-        return null;
+        TupleDesc tupleDesc = this.child1.getTupleDesc();
+        return tupleDesc.getFieldName(this.p.getField1());
     }
 
     /**
@@ -46,7 +61,8 @@ public class Join extends Operator {
      */
     public String getJoinField2Name() {
         // TODO: some code goes here
-        return null;
+        TupleDesc tupleDesc = this.child2.getTupleDesc();
+        return tupleDesc.getFieldName(this.p.getField2());
     }
 
     /**
@@ -55,20 +71,38 @@ public class Join extends Operator {
      */
     public TupleDesc getTupleDesc() {
         // TODO: some code goes here
-        return null;
+        TupleDesc child1TupleDesc = this.child1.getTupleDesc();
+        TupleDesc child2TupleDesc = this.child2.getTupleDesc();
+        return TupleDesc.merge(child1TupleDesc, child2TupleDesc);
     }
 
     public void open() throws DbException, NoSuchElementException,
             TransactionAbortedException {
         // TODO: some code goes here
+        // child1 is left relation
+        this.child1.open();
+        if (this.child1.hasNext()) {
+            this.nextChild1 = this.child1.next();
+        }
+        this.child2.open();
+        super.open();
     }
 
     public void close() {
         // TODO: some code goes here
+        super.close();
+        this.child1.close();
+        this.nextChild1 = null;
+        this.child2.close();
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
         // TODO: some code goes here
+        this.child1.rewind();
+        if (this.child1.hasNext()) {
+            this.nextChild1 = this.child1.next();
+        }
+        this.child2.rewind();
     }
 
     /**
@@ -91,18 +125,47 @@ public class Join extends Operator {
      */
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
         // TODO: some code goes here
-        return null;
+        /**
+         * Here the simplest join type is nested loop join
+         */
+        while (this.child2.hasNext()) {
+            Tuple nextChild2 = this.child2.next();
+            if (this.p.filter(nextChild1, nextChild2)) {
+                TupleDesc newTupleDesc = this.getTupleDesc();
+                Tuple newTuple = new Tuple(newTupleDesc);
+                int child1Length = this.child1.getTupleDesc().numFields();
+
+                for (int i = 0; i < newTupleDesc.numFields(); i++) {
+                    if (i < child1Length) {
+                        newTuple.setField(i, nextChild1.getField(i));
+                    } else {
+                        newTuple.setField(i, nextChild2.getField(i - child1Length));
+                    }
+                }
+                return newTuple;
+             }
+        }
+
+        if (!this.child1.hasNext()) {
+            return null;
+        } else {
+            this.nextChild1 = child1.next();
+            this.child2.rewind();
+            return fetchNext();
+        }
     }
 
     @Override
     public OpIterator[] getChildren() {
         // TODO: some code goes here
-        return null;
+        return new OpIterator[]{this.child1, this.child2};
     }
 
     @Override
     public void setChildren(OpIterator[] children) {
         // TODO: some code goes here
+        this.child1 = children[0];
+        this.child2 = children[1];
     }
 
 }

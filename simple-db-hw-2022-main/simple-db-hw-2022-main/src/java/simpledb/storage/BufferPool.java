@@ -4,6 +4,7 @@ import simpledb.common.*;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
 
+import javax.xml.crypto.Data;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -158,6 +159,14 @@ public class BufferPool {
             throws DbException, IOException, TransactionAbortedException {
         // TODO: some code goes here
         // not necessary for lab1
+        DbFile dbFile = Database.getCatalog().getDatabaseFile(tableId);
+        List<Page> pages = dbFile.insertTuple(tid, t);
+        for (Page page: pages) {
+            dbFile.writePage(page);
+//            this.cache.updatePage(page.getId(), page);
+            page.markDirty(true, tid);
+        }
+
     }
 
     /**
@@ -177,6 +186,18 @@ public class BufferPool {
             throws DbException, IOException, TransactionAbortedException {
         // TODO: some code goes here
         // not necessary for lab1
+        RecordId recordId = t.getRecordId();
+        if (recordId == null) {
+            throw new DbException("recordId is null when delete tuple");
+        }
+        DbFile dbFile = Database.getCatalog().getTableFile(recordId.getPageId().getTableId());
+        // This will make sure that pages are updated since we are passing the references all the way along
+        List<Page> pages = dbFile.deleteTuple(tid, t);
+        for (Page page: pages) {
+            dbFile.writePage(page);
+            this.cache.updatePage(page.getId(), page);
+            page.markDirty(true, tid);
+        }
     }
 
     /**

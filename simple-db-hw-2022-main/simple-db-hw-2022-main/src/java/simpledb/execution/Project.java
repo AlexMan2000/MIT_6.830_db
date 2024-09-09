@@ -74,6 +74,7 @@ public class Project extends Operator {
             TransactionAbortedException, DbException {
         if (!child.hasNext()) return null;
         Tuple t = child.next();
+        // 由于Project会改变Tuple的宽度(字段), 所以需要创建新的Tuple实例，设置新的Tuple信息
         Tuple newTuple = new Tuple(td);
         newTuple.setRecordId(t.getRecordId());
         for (int i = 0; i < td.numFields(); i++) {

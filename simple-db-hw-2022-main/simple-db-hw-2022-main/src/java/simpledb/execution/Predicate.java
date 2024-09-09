@@ -61,7 +61,7 @@ public class Predicate implements Serializable {
      */
     public Predicate(int field, Op op, Field operand) {
         // TODO: some code goes here
-        this.field = field;      // 哪一列
+        this.field = field;      // 哪一列, column idx
         this.op = op;            // 怎么比
         this.operand = operand;  // 和什么数值比
     }
@@ -95,6 +95,7 @@ public class Predicate implements Serializable {
      * operand field specified in the constructor using the operator specific in
      * the constructor. The comparison can be made through Field's compare
      * method.
+     * 本质上就是判断我传进来的这个Tuple需不需要被这个Predicate施加的条件过滤掉
      *
      * @param t The tuple to compare against
      * @return true if the comparison is true, false otherwise.

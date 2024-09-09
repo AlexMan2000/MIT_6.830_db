@@ -1,7 +1,9 @@
 package simpledb.execution;
 
 import simpledb.common.Type;
-import simpledb.storage.Tuple;
+import simpledb.storage.*;
+
+import java.util.*;
 
 /**
  * Knows how to compute some aggregate over a set of StringFields.
@@ -10,6 +12,13 @@ public class StringAggregator implements Aggregator {
 
     private static final long serialVersionUID = 1L;
 
+    private int gbfield;
+    private Type gbfieldtype;
+    private int afield;
+    private Op what;
+    private TupleDesc td;
+
+    private Map<Field, AggResult> results =  new LinkedHashMap<>();
     /**
      * Aggregate constructor
      *
@@ -22,6 +31,16 @@ public class StringAggregator implements Aggregator {
 
     public StringAggregator(int gbfield, Type gbfieldtype, int afield, Op what) {
         // TODO: some code goes here
+        this.gbfield = gbfield;
+        this.gbfieldtype = gbfieldtype;
+        this.afield = afield;
+        this.what = what;
+        // HashMap supports null as a key, so we don't do conditions here
+        if (gbfield != Aggregator.NO_GROUPING) {
+            this.td = new TupleDesc(new Type[] { gbfieldtype, Type.INT_TYPE});
+        } else {
+            this.td = new TupleDesc(new Type[] { Type.INT_TYPE});
+        }
     }
 
     /**
@@ -31,7 +50,19 @@ public class StringAggregator implements Aggregator {
      */
     public void mergeTupleIntoGroup(Tuple tup) {
         // TODO: some code goes here
+        Field keyField;
+        if (gbfield != Aggregator.NO_GROUPING) {
+            keyField = tup.getField(gbfield);
+        } else {
+            keyField = Aggregator.EMPTY_FIELD;
+        }
+
+        String newValue = ((StringField)tup.getField(afield)).getValue();
+        results.computeIfAbsent(keyField, k -> new AggResult(what)).merge(newValue);
     }
+
+
+
 
     /**
      * Create a OpIterator over group aggregate results.
@@ -43,7 +74,41 @@ public class StringAggregator implements Aggregator {
      */
     public OpIterator iterator() {
         // TODO: some code goes here
-        throw new UnsupportedOperationException("please implement me for lab2");
+        List<Tuple> tuples = new ArrayList<>(results.size());
+        for (Map.Entry<Field, AggResult> entry : results.entrySet()) {
+            Tuple tp = new Tuple(td);
+            if(gbfield != Aggregator.NO_GROUPING){
+                tp.setField(0, entry.getKey());
+                tp.setField(1, new IntField(entry.getValue().getCount()));
+            }else{
+                tp.setField(0, new IntField(entry.getValue().getCount()));
+            }
+            tuples.add(tp);
+        }
+        return new TupleIterator(td, tuples);
+    }
+
+
+
+    private static class AggResult {
+        private int count;
+
+        private final Op what;
+
+        public AggResult(Op what) {
+            this.what = what;
+            this.count = 0;
+        }
+
+        // Only supports COUNT
+        public void merge(String newValue) {
+            this.count++;
+        }
+
+
+        public int getCount() {
+            return this.count;
+        }
     }
 
 }

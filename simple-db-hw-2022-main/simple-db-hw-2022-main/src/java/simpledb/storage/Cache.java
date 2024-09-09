@@ -12,6 +12,10 @@ public interface Cache {
 
     Page getPage(PageId pid);
 
+    void printAllPages();
+
+    void updatePage(PageId pid, Page page);
+
     boolean isFull();
 
 

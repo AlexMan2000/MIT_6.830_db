@@ -56,6 +56,9 @@ public abstract class RUCache implements Cache{
     public abstract Page getPage(PageId pid);
 
     @Override
+    public abstract void updatePage(PageId pid, Page page);
+
+    @Override
     public boolean isFull() {
         return this.size == this.capacity;
     }
